@@ -2,7 +2,6 @@
 #include <stdlib.h> 
 #include <string.h> 
 
-
 #include <winsock2.h>
 
 #pragma comment(lib,"ws2_32.lib") //Winsock Library
@@ -21,7 +20,12 @@ void initWinSock()
 
 	printf("Initialised\n");
 }
-
+struct Certificate
+{
+	unsigned int hash;
+	char name[38];
+};
+void serialize(Certificate* packet, char* data);
 int main() 
 { 
 	int server_fd = 0;
@@ -58,12 +62,28 @@ int main()
 		exit(EXIT_FAILURE); 
 	} 
 	printf("Waiting for connection...\n");
-	if ((new_socket = accept(server_fd, (struct sockaddr *)&address, 
-								&addrlen))<0) 
-	{ 
-		perror("accept"); 
-		exit(EXIT_FAILURE); 
-	} 
+	//while (1)
+	//{
+	if ((new_socket = accept(server_fd, (struct sockaddr*)&address,
+			&addrlen)) < 0)
+	{
+			perror("accept");
+			exit(EXIT_FAILURE);
+	}
+		//else {
+			// start new thread ////....... 15 ms ...........
+			// with new socket
+			// if it hangs - need to inform with msg to clients instead of adding to buffer i.e. listen queue
+		//}
+	//}
+	// send cert
+	Certificate* serverstruct = new Certificate;
+	serverstruct->hash = 2020;
+	strcpy_s(serverstruct->name, "certificate authentification");
+	char data[sizeof(Certificate)];
+	serialize(serverstruct, data);
+	send(new_socket, data, sizeof(data), 0);
+	printf("\nCertificate sent!\n");
 	printf("Waiting for data...\n");
 	recv( new_socket , buffer, 1024, 0); 
 	printf("Received: %s\n",buffer ); 
@@ -71,3 +91,16 @@ int main()
 	printf("Hello message sent\n"); 
 	return 0; 
 } 
+void serialize(Certificate* packet, char* data)
+{
+	int* q = (int*)data;
+	*q = packet->hash;		q++;
+	char* p = (char*)q;
+	int i = 0;
+	while (i < 38)
+	{
+		*p = packet->name[i];
+		p++;
+		i++;
+	}
+}

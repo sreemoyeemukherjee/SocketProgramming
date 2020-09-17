@@ -20,7 +20,12 @@ void initWinSock()
 
 	printf("Initialised\n");
 }
-
+struct Certificate
+{
+	unsigned int hash; 
+	char name[38];
+};
+void deserialize(char* data, Certificate* packet);
 int main() 
 { 
 	int sock = 0; 
@@ -51,9 +56,28 @@ int main()
 		printf("\nConnection Failed \n"); 
 		return -1; 
 	} 
+	// recv cert
+	Certificate* clientstruct = new Certificate;
+	recv(sock, buffer, 1024, 0);
+	deserialize(buffer, clientstruct);
+	printf("Received certificate: name = %s \nhash = %d", clientstruct->name, clientstruct->hash);	
+	printf("\nCertificate authenticated!\n");
 	send(sock , hello , strlen(hello) , 0 ); 
 	printf("Hello message sent\n"); 
 	recv( sock , buffer, 1024, 0); 
 	printf("Received: %s\n",buffer ); 
 	return 0; 
 } 
+void deserialize(char* data, Certificate* packet)
+{
+	int* q = (int*)data;
+	packet->hash = *q;		q++;
+	char* p = (char*)q;
+	int i = 0;
+	while (i < 38)
+	{
+		packet->name[i] = *p;
+		p++;
+		i++;
+	}
+}
